@@ -12,6 +12,16 @@ jobs:
     steps:
       - checkout
       - run:
+          name: Install AWS CLI
+          command: |
+            apk add --no-cache python3 py3-pip && pip3 install awscli
+      - run:
+          name: Configure AWS CLI
+          command: |
+            aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
+            aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
+            aws configure set region $AWS_DEFAULT_REGION
+      - run:
           name: Install jq
           command: apk add --no-cache jq
       - run:
