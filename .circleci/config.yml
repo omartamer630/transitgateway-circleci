@@ -60,14 +60,7 @@ workflows:
           requires:
             - terraform-plan
             - hold
-      - hold:
-          type: approval
-          requires:
-            - terraform-apply
       - terraform-destroy:
           requires:
             - terraform-apply
             - hold
-          filters:
-            branches:
-              only: main
