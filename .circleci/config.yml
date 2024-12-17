@@ -1,0 +1,73 @@
+version: 2.1
+
+executors:
+  terraform:
+    docker:
+      - image: hashicorp/terraform:1.5.0
+    working_directory: ~/task
+
+jobs:
+  terraform-plan:
+    executor: terraform
+    steps:
+      - checkout
+      - run:
+          name: Install jq
+          command: apk add --no-cache jq
+      - run:
+          name: Initialize Terraform
+          command: terraform init
+      - run:
+          name: Terraform Plan
+          command: terraform plan -out=tfplan
+      - run:
+          name: Review Plan Output
+          command: |
+            terraform show -json tfplan | jq '.resource_changes[] | {type: .type, name: .name, change: .change}' > plan_output.json
+            cat plan_output.json
+
+  terraform-apply:
+    executor: terraform
+    steps:
+      - checkout
+      - run:
+          name: Initialize Terraform
+          command: terraform init
+      - run:
+          name: Terraform Apply
+          command: terraform apply -auto-approve
+
+  terraform-destroy:
+    executor: terraform
+    steps:
+      - checkout
+      - run:
+          name: Initialize Terraform
+          command: terraform init
+      - run:
+          name: Terraform Destroy
+          command: terraform destroy -auto-approve
+
+workflows:
+  terraform-workflow:
+    jobs:
+      - terraform-plan
+      - hold:
+          type: approval
+          requires:
+            - terraform-plan
+      - terraform-apply:
+          requires:
+            - terraform-plan
+            - hold
+      - hold:
+          type: approval
+          requires:
+            - terraform-apply
+      - terraform-destroy:
+          requires:
+            - terraform-apply
+            - hold
+          filters:
+            branches:
+              only: main
